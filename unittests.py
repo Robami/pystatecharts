@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+__author__      = "Vishal Patil"
+__copyright__   = "Copyright 2010 - 2011, Vishal Patil"
+__license__     = "New-style BSD"
+
 import re
 import unittest
 
