@@ -16,6 +16,7 @@ class RuntimeData(object):
         self.active_states = {}
         self.history_states = {}
         self.transition = None
+        self.event = None
 
     def is_active(self, state):
         status = False
