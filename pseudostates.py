@@ -10,7 +10,7 @@ from states import HierarchicalState
 
 class PseudoState(State):
     def __init__(self, context):
-        State.__init__(self, context, dict())
+        State.__init__(self, context, None, None, None)
 
     def activate(self, runtime, param):
         runtime.activate(self)

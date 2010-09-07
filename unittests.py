@@ -72,15 +72,6 @@ class TestExitClassAction(TestClassAction):
         TestClassAction.__init__(self, state_name)
         self.action_name = "exit" 
 
-def class_actions(state):
-    test_state_actions = {
-        "entry" : TestEntryClassAction(state),
-        "do"    : TestDoClassAction(state),
-        "exit"  : TestExitClassAction(state)   
-    }
-
-    return test_state_actions
-
 class Base(unittest.TestCase):
 
     def create_statechart(self, runtime, param):       
@@ -102,9 +93,12 @@ class FSMTest(Base):
         state_chart = Statechart() 
 
         start = StartState(state_chart)
-        A = State(state_chart, class_actions("A"))
-        B = State(state_chart, class_actions("B"))
-        C = State(state_chart, class_actions("C"))
+        A = State(state_chart, TestEntryClassAction("A"), 
+                TestDoClassAction("A"), TestExitClassAction("A"))
+        B = State(state_chart, TestEntryClassAction("B"), 
+                TestDoClassAction("B"), TestExitClassAction("B"))
+        C = State(state_chart, TestEntryClassAction("C"),
+                TestDoClassAction("C"), TestExitClassAction("C"))
         end = EndState(state_chart)
 
         TestTransition(start, 'start', A, 'A', None, None) 
@@ -147,22 +141,29 @@ class HSMTest(Base):
         state_chart = Statechart() 
 
         start = StartState(state_chart)
-        A = HierarchicalState(state_chart, class_actions("A"))
+        A = HierarchicalState(state_chart, TestEntryClassAction("A"),
+            TestDoClassAction("A"), TestExitClassAction("A"))
         end = EndState(state_chart)
 
         start_a = StartState(A)
-        B = HierarchicalState(A, class_actions("B"))
-        E = HierarchicalState(A, class_actions("E"))
+        B = HierarchicalState(A, TestEntryClassAction("B"), 
+            TestDoClassAction("B"), TestExitClassAction("B"))
+        E = HierarchicalState(A, TestEntryClassAction("E"),
+            TestDoClassAction("E"), TestExitClassAction("E"))
 
         start_b = StartState(B)
         history_b = HistoryState(B)
-        C = State(B, class_actions("C"))
-        D = State(B, class_actions("D"))
+        C = State(B, TestEntryClassAction("C"), 
+            TestDoClassAction("C"), TestExitClassAction("C"))
+        D = State(B, TestEntryClassAction("D"), 
+            TestDoClassAction("D"), TestExitClassAction("D"))
 
         start_e = StartState(E)
         history_e = HistoryState(E)
-        F = State(E, class_actions("F"))
-        G = State(E, class_actions("G"))
+        F = State(E, TestEntryClassAction("F"), 
+            TestDoClassAction("F"), TestExitClassAction("F"))
+        G = State(E, TestEntryClassAction("G"), 
+            TestDoClassAction("G"), TestExitClassAction("G"))
 
         TestTransition(start, 'start', A, 'A', None, None)
         TestTransition(start_a, 'start_a', B, 'B', None, None)
@@ -227,26 +228,34 @@ class ConcurrentTest(Base):
         state_chart = Statechart() 
 
         start = StartState(state_chart)
-        X = ConcurrentState(state_chart, class_actions("X"))
+        X = ConcurrentState(state_chart, TestEntryClassAction("X"), 
+            TestDoClassAction("X"), TestExitClassAction("X"))
         TestTransition(start, 'start', X, 'X', None, None)
 
-        A = HierarchicalState(X, class_actions("A"))
+        A = HierarchicalState(X, TestEntryClassAction("A"), 
+            TestDoClassAction("A"), TestExitClassAction("A"))
         start_a = StartState(A)
         history_a = HistoryState(A)
-        D = State(A, class_actions("D"))
-        E = State(A, class_actions("E"))
+        D = State(A, TestEntryClassAction("D"), 
+            TestDoClassAction("D"), TestExitClassAction("D"))
+        E = State(A, TestEntryClassAction("E"), 
+            TestDoClassAction("E"), TestExitClassAction("E"))
 
         TestTransition(start_a, 'start_a', history_a, 'history_a', None, None)
         TestTransition(history_a, 'history_a', D, 'D', None, None)
         TestTransition(D, 'D', E, 'E', Event(1), None)
         TestTransition(E, 'E', D, 'D', Event(2), None)
 
-        B = HierarchicalState(X, class_actions("B"))
+        B = HierarchicalState(X, TestEntryClassAction("B"), 
+            TestDoClassAction("B"), TestExitClassAction("B"))
         start_b = StartState(B)
         history_b = HistoryState(B)
-        F = State(B, class_actions("F"))
-        G = State(B, class_actions("G"))
-        H = State(B, class_actions("H"))
+        F = State(B, TestEntryClassAction("F"), 
+            TestDoClassAction("F"), TestExitClassAction("F"))
+        G = State(B, TestEntryClassAction("G"), 
+            TestDoClassAction("G"), TestExitClassAction("G"))
+        H = State(B, TestEntryClassAction("H"), 
+            TestDoClassAction("H"), TestExitClassAction("H"))
 
         TestTransition(start_b, 'start_b', history_b, 'history_b', None, None)
         TestTransition(history_b, 'history_b', F, 'F', None, None)
@@ -255,12 +264,16 @@ class ConcurrentTest(Base):
         TestTransition(G, 'G', F, 'F', Event(2), None)
         TestTransition(F, 'F', G, 'G', Event(8), None)
 
-        C = HierarchicalState(state_chart, class_actions("C"))
+        C = HierarchicalState(state_chart, TestEntryClassAction("C"), 
+            TestDoClassAction("C"), TestExitClassAction("C") )
         start_c = StartState(C)
         history_c = HistoryState(C)
-        I = State(C, class_actions("I"))
-        J = State(C, class_actions("J"))
-        K = State(C, class_actions("K"))
+        I = State(C, TestEntryClassAction("I"), 
+            TestDoClassAction("I"), TestExitClassAction("I"))
+        J = State(C, TestEntryClassAction("J"), 
+            TestDoClassAction("J"), TestExitClassAction("J"))
+        K = State(C, TestEntryClassAction("K"), 
+            TestDoClassAction("K"), TestExitClassAction("K"))
         TestTransition(start_c, 'start_c', history_c, 'history_c', None, None)
         TestTransition(history_c, 'history_c', I, 'I', None, None)
         TestTransition(J, 'J', X, 'X', Event(13), None)

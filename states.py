@@ -8,7 +8,7 @@ from action import Action
 
 class State(object):
 
-    def __init__(self, context, actions):
+    def __init__(self, context, entry, do, exit):
 
         """ Context can be null only for the statechart """
         if (context == None and (not isinstance(self, Statechart))):
@@ -33,21 +33,9 @@ class State(object):
             else:
                 assert False, "Statechart not found check hierarchy"
 
-        if actions.has_key("entry"): 
-            self.entry = actions["entry"]
-        else:
-            self.entry = None
-
-        if actions.has_key("do"):
-            self.do    = actions["do"]
-        else:
-            self.do = None
-
-        if actions.has_key("exit"):            
-            self.exit  = actions["exit"]
-        else:
-            self.exit = None
-
+        self.entry = entry 
+        self.do    = do 
+        self.exit  = exit 
         self.transitions = []
 
     def add_transition(self, transition):
@@ -96,8 +84,8 @@ class State(object):
 
 class Context(State):
 
-    def __init__(self, parent, actions):
-        State.__init__(self, parent, actions)
+    def __init__(self, parent, entry, do, exit):
+        State.__init__(self, parent, entry, do, exit)
         self.start_state = None 
 
 class Transition(object):
@@ -176,6 +164,7 @@ class Transition(object):
         if (self.guard and (not self.guard.check(runtime, param))):
             return False
 
+        runtime.event = event
         runtime.transition = self 
 
         for state in self.deactivate:
@@ -188,14 +177,15 @@ class Transition(object):
             state.activate(runtime, param)
 
         runtime.transition = None 
+        runtime.event = None
 
         return True	
 
 class HierarchicalState(Context):
 
-    def __init__(self, parent, actions):
+    def __init__(self, parent, entry, do, exit):
 
-        Context.__init__(self, parent, actions)
+        Context.__init__(self, parent, entry, do, exit)
         self.history = None
 
         if isinstance(parent, ConcurrentState):
@@ -249,8 +239,8 @@ class HierarchicalState(Context):
 
 class ConcurrentState(Context):
 
-    def __init__(self, context, actions):
-        Context.__init__(self, context, actions)
+    def __init__(self, context, entry, do, exit):
+        Context.__init__(self, context, entry, do, exit)
         self.regions = []
 
     def add_region(self, region):
@@ -302,7 +292,7 @@ class ConcurrentState(Context):
 class Statechart(Context):
 
     def __init__(self):
-        Context.__init__(self, None, dict()) 
+        Context.__init__(self, None, None, None, None) 
 
     def start(self, runtime, param):
         runtime.reset()
