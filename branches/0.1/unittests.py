@@ -15,12 +15,8 @@ from states import Statechart
 from pseudostates import StartState 
 from pseudostates import EndState 
 from pseudostates import HistoryState 
-from runtime import RuntimeData
 from action import Action
 from transition import Event
-
-class TestRuntime(RuntimeData):
-   pass 
 
 class TestParam(object):
 
@@ -33,7 +29,7 @@ class TestTransitionAction(Action):
         self.start = start
         self.end = end
 
-    def execute(self, runtime, parameter):
+    def execute(self, parameter):
         transition = "%s:%s" % (self.start, self.end)
         parameter.path = ("%s %s" % (parameter.path, transition))
         parameter.path.strip()
@@ -50,7 +46,7 @@ class TestClassAction(Action):
      def __init__(self, state_name):
         self.state_name = state_name
 
-     def execute(self, runtime, parameter):
+     def execute(self, parameter):
         action = "%s:%s" % (self.state_name, self.action_name)
         parameter.path = ("%s %s" % (parameter.path, action)).strip()
        
@@ -74,23 +70,22 @@ class TestExitClassAction(TestClassAction):
 
 class Base(unittest.TestCase):
 
-    def create_statechart(self, runtime, param):       
+    def create_statechart(self, param):       
         raise NotImplementedError("Create statechart not implemented")
 
     def dispatch_events(self, events, expected_path):
-        runtime = TestRuntime()
         param   = TestParam()
-        state_chart = self.create_statechart(runtime, param)
-        state_chart.start(runtime, param)
+        state_chart = self.create_statechart(param)
+        state_chart.start()
         for event in events:
-            state_chart.dispatch(runtime, Event(event), param)
+            state_chart.dispatch(Event(event))
         self.assertEquals(param.path, expected_path)    
 
 class FSMTest(Base):
 
-    def create_statechart(self, runtime, param):       
+    def create_statechart(self, param):       
 
-        state_chart = Statechart() 
+        state_chart = Statechart(param) 
 
         start = StartState(state_chart)
         A = State(state_chart, TestEntryClassAction("A"), 
@@ -137,8 +132,8 @@ class FSMTest(Base):
 
 class HSMTest(Base):
 
-    def create_statechart(self, runtime, param):       
-        state_chart = Statechart() 
+    def create_statechart(self, param):       
+        state_chart = Statechart(param) 
 
         start = StartState(state_chart)
         A = HierarchicalState(state_chart, TestEntryClassAction("A"),
@@ -224,8 +219,8 @@ class HSMTest(Base):
 
 class ConcurrentTest(Base):
 
-    def create_statechart(self, runtime, param):       
-        state_chart = Statechart() 
+    def create_statechart(self, param):       
+        state_chart = Statechart(param) 
 
         start = StartState(state_chart)
         X = ConcurrentState(state_chart, TestEntryClassAction("X"), 
