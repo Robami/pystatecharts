@@ -4,11 +4,11 @@ __author__      = "Vishal Patil"
 __copyright__   = "Copyright 2010 - 2011, Vishal Patil"
 __license__     = "New-style BSD"
 
-from action import Action
+from runtime import RuntimeData
 
 class State(object):
 
-    def __init__(self, context, actions):
+    def __init__(self, context, entry, do, exit):
 
         """ Context can be null only for the statechart """
         if (context == None and (not isinstance(self, Statechart))):
@@ -33,21 +33,9 @@ class State(object):
             else:
                 assert False, "Statechart not found check hierarchy"
 
-        if actions.has_key("entry"): 
-            self.entry = actions["entry"]
-        else:
-            self.entry = None
-
-        if actions.has_key("do"):
-            self.do    = actions["do"]
-        else:
-            self.do = None
-
-        if actions.has_key("exit"):            
-            self.exit  = actions["exit"]
-        else:
-            self.exit = None
-
+        self.entry = entry 
+        self.do    = do 
+        self.exit  = exit 
         self.transitions = []
 
     def add_transition(self, transition):
@@ -66,10 +54,10 @@ class State(object):
             runtime.activate(self)
 
             if self.entry:
-                self.entry.execute(runtime, param)
+                self.entry.execute(param)
             
             if self.do:
-                self.do.execute(runtime, param)
+                self.do.execute(param)
 
             activated = True
             
@@ -80,7 +68,7 @@ class State(object):
         if runtime.is_active(self):
 
             if self.exit:
-                self.exit.execute(runtime, param)
+                self.exit.execute(param)
 
             runtime.deactivate(self)
 
@@ -96,8 +84,8 @@ class State(object):
 
 class Context(State):
 
-    def __init__(self, parent, actions):
-        State.__init__(self, parent, actions)
+    def __init__(self, parent, entry, do, exit):
+        State.__init__(self, parent, entry, do, exit)
         self.start_state = None 
 
 class Transition(object):
@@ -176,26 +164,28 @@ class Transition(object):
         if (self.guard and (not self.guard.check(runtime, param))):
             return False
 
+        runtime.event = event
         runtime.transition = self 
 
         for state in self.deactivate:
             state.deactivate(runtime, param)
 
         if self.action:
-            self.action.execute(runtime, param)	
+            self.action.execute(param)	
 
         for state in self.activate:
             state.activate(runtime, param)
 
         runtime.transition = None 
+        runtime.event = None
 
         return True	
 
 class HierarchicalState(Context):
 
-    def __init__(self, parent, actions):
+    def __init__(self, parent, entry, do, exit):
 
-        Context.__init__(self, parent, actions)
+        Context.__init__(self, parent, entry, do, exit)
         self.history = None
 
         if isinstance(parent, ConcurrentState):
@@ -249,8 +239,8 @@ class HierarchicalState(Context):
 
 class ConcurrentState(Context):
 
-    def __init__(self, context, actions):
-        Context.__init__(self, context, actions)
+    def __init__(self, context, entry, do, exit):
+        Context.__init__(self, context, entry, do, exit)
         self.regions = []
 
     def add_region(self, region):
@@ -301,18 +291,20 @@ class ConcurrentState(Context):
 
 class Statechart(Context):
 
-    def __init__(self):
-        Context.__init__(self, None, dict()) 
+    def __init__(self, param):
+        Context.__init__(self, None, None, None, None) 
+        self.param = param
 
-    def start(self, runtime, param):
-        runtime.reset()
-        runtime.activate(self)
-        runtime.activate(self.start_state)
-        self.dispatch(runtime, None, param)
+    def start(self):
+        self.runtime = RuntimeData()
+        self.runtime.reset()
+        self.runtime.activate(self)
+        self.runtime.activate(self.start_state)
+        self.dispatch(None)
 
-    def dispatch(self, runtime, event, param):
-        current_state = runtime.active_states[self].current_state
-        return current_state.dispatch(runtime, event, param)	
+    def dispatch(self, event):
+        current_state = self.runtime.active_states[self].current_state
+        return current_state.dispatch(self.runtime, event, self.param)	
 
     def add_transition(self, transition):
         assert False, "Cannot add transition to a statechart"
