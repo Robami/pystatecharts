@@ -5,5 +5,5 @@ __copyright__   = "Copyright 2010 - 2011, Vishal Patil"
 __license__     = "New-style BSD"
 
 class Action(object):
-	def execute(self, runtime, parameter):
+	def execute(self, parameter):
 		raise NotImplementedError
