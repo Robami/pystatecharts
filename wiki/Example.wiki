@@ -16,5 +16,5 @@ The following page provides an example of the *TicTacToe* game implementation us
 
 The statechart consists of 
   * Concurrent State called *Board* have two Hierarchical State Machines (HSM) 
-  ** Interaction : Responsible for game interaction with user
-  ** Help : Responsible for help interaction and which can run in parallel with the game interaction machine
+   * *Interaction* : Responsible for game interaction with user
+   * *Help* : Responsible for help interaction and which can run in parallel with the game interaction machine
