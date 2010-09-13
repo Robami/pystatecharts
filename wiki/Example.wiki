@@ -1,4 +1,5 @@
-The following page provides an example of the *TicTacToe* game implementation using the python statechart library
+= TicTacToe =
+The following page provides an example of the TicTacToe game implementation using the python statechart library
 
 = Getting the library code =
   {{{
