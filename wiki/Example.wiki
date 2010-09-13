@@ -1,3 +1,4 @@
+#labels python,statecharts,Featured,Phase-Implementation
 = TicTacToe =
 The following page provides an example of the TicTacToe game implementation using the python statechart library
 
