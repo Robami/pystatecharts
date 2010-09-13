@@ -34,6 +34,7 @@ The following code listing gives an idea about how the above state chart can be 
 }}}
 
 ==== Interaction HSM ====
+{{{
         InteractionState = HierarchicalState(BoardState, None, None, None)
 
         start = StartState(InteractionState)
