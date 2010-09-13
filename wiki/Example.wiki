@@ -1,8 +1,9 @@
 The following page provides an example of the *TicTacToe* game implementation using the python statechart library
 
 = Getting the library code =
-
+  {{{
   svn checkout https://pystatecharts.googlecode.com/svn/branches/0.2 pystatecharts
-
+  }}}
 = Statechart =
-  http://picasaweb.google.com/lh/photo/1MPEYqppf95JwYlS0uWorg?feat=directlink
+  
+  http://lh4.ggpht.com/_YajBMQAFVhU/TI54kH01JfI/AAAAAAAAEJ8/JKedcUBLfuE/s720/tictactoe.png
