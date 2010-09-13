@@ -2,8 +2,12 @@ The following page provides an example of the *TicTacToe* game implementation us
 
 = Getting the library code =
   {{{
-  svn checkout https://pystatecharts.googlecode.com/svn/branches/0.2 pystatecharts
+  svn checkout https://pystatecharts.googlecode.com/svn/branches/0.2 src
   }}}
+
+* The python package for the statechart library will located at src/pystatecharts
+* The source for the tictactoe game can be found at src/tictactoe.py
+ 
 = Statechart =
   
   http://lh4.ggpht.com/_YajBMQAFVhU/TI54kH01JfI/AAAAAAAAEJ8/JKedcUBLfuE/s720/tictactoe.png
