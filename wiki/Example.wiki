@@ -76,3 +76,15 @@ The following code listing gives an idea about how the above state chart can be 
                 Event(TicTacToeEvent.dismiss_help), None, NoHelpAction())
 
 }}}
+
+  * Each of the states (except the start and end states) in the statechart can be associated with the following *action* objects. 
+     ** Entry Action : Executed when the state is entered 
+     ** Do Action : Executed after the entry action
+     ** Exit Action : Executed when the state is exited 
+{{{
+class ShowHelpEntryAction(Action):
+
+    def execute(self, param):
+        if param.ui.is_game_over():
+            param.ui.showhelp()
+}}}
