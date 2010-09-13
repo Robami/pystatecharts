@@ -1,5 +1,3 @@
-#TicTacToe implementation using the statechart library
-
 = Example =
 
 The following page provides an example of the TicTacToe game implementation using the python statechart library
