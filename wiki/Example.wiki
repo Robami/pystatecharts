@@ -78,9 +78,10 @@ The following code listing gives an idea about how the above state chart can be 
 }}}
 
   * Each of the states (except the start and end states) in the statechart can be associated with the following *action* objects. 
-     ** Entry Action : Executed when the state is entered 
-     ** Do Action : Executed after the entry action
-     ** Exit Action : Executed when the state is exited 
+   ** Entry Action : Executed when the state is entered 
+   ** Do Action : Executed after the entry action
+   ** Exit Action : Executed when the state is exited 
+==== Example ====
 {{{
 class ShowHelpEntryAction(Action):
 
@@ -88,3 +89,16 @@ class ShowHelpEntryAction(Action):
         if param.ui.is_game_over():
             param.ui.showhelp()
 }}}
+
+  * In addition each of the transition in the statechart can be associated with an action object as well.
+
+==== Example =====
+{{{
+class ExitAction(Action):
+
+    def execute(self, param):
+        param.shutdown()
+
+}}}
+
+  
