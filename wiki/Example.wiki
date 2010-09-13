@@ -15,6 +15,53 @@ The following page provides an example of the *TicTacToe* game implementation us
 = Implementation =
 
 The statechart consists of 
-  * Concurrent State called *Board* have two Hierarchical State Machines (HSM) 
+  * Concurrent State called *Board* having two Hierarchical State Machines (HSM) 
    * *Interaction* : Responsible for game interaction with user
    * *Help* : Responsible for help interaction and which can run in parallel with the game interaction machine
+
+{{{
+        start = StartState(self)
+        end_state = EndState(self)
+        BoardState = ConcurrentState(self, None, None, None)
+
+        Transition(start, BoardState, None, None, None)
+        Transition(BoardState, end_state, Event(TicTacToeEvent.exit), 
+                None, ExitAction())
+
+        InteractionState = HierarchicalState(BoardState, None, None, None)
+
+        start = StartState(InteractionState)
+        PlayState = HierarchicalState(InteractionState, 
+                                PlayEntryAction(), None, None)
+        DoneState = State(InteractionState, DoneEntryAction(), None, None)
+
+        Transition(start, PlayState, None, None, None)
+        Transition(PlayState, DoneState, Event(TicTacToeEvent.game_over), 
+                    None, None)
+        Transition(DoneState, PlayState, Event(TicTacToeEvent.replay), 
+                    None, None)
+
+        start = StartState(PlayState)
+        WaitUserInputState = State(PlayState, CheckBoardAction(), None, None) 
+        DecideMoveState = State(PlayState, CheckBoardAction(), 
+                                MakeMoveAction(), None) 
+
+        Transition(start, WaitUserInputState, None, None, None) 
+        Transition(WaitUserInputState, DecideMoveState,
+                    Event(TicTacToeEvent.cell_clicked), None, None)
+        Transition(DecideMoveState, WaitUserInputState, 
+                Event(TicTacToeEvent.move_made), None, None) 
+     
+        HelpState = HierarchicalState(BoardState, None, None, None)
+
+        start = StartState(HelpState) 
+        NoHelpState = State(HelpState, None, None, None)
+        ShowHelpState = State(HelpState, ShowHelpEntryAction(), None, None)
+
+        Transition(start, NoHelpState, None, None, None)
+        Transition(NoHelpState, ShowHelpState,
+                Event(TicTacToeEvent.show_help), None, DisplayHelpAction())
+        Transition(ShowHelpState, NoHelpState,
+                Event(TicTacToeEvent.dismiss_help), None, NoHelpAction())
+
+}}}
