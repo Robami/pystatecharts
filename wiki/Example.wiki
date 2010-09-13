@@ -8,6 +8,7 @@ The following page provides an example of the TicTacToe game implementation usin
 
   * The python package for the statechart library will located at src/pystatecharts
   * The source for the tictactoe game can be found at src/tictactoe.py
+  * NOTE: In order to successfully run the example, you need the python tkinter package installed with multi-threading enabled. If multi-threading is not enabled for the installed tkinter package, you will need to use the [http://tkinter.unpythonic.net/wiki/mtTkinter mtTkinter package]. This can be done by copying the mtTkinter.py in the src directory.
  
 = Statechart =
   
