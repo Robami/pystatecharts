@@ -1,0 +1,15 @@
+#summary One-sentence summary of this page.
+
+= Introduction =
+
+CountingGuards are guards that have been designed with a counter and a threshold. 
+The CountingGuard will return False until the threshold number of 
+Events have been received. CountingGuards may be designed to retrigger, that is, after 
+returning True, if not retrigger_enabled continue to return True. 
+If retrigger_enabled, then return False until the count threshold is again reached.
+
+
+= Details =
+
+Class CountingGuard(Guard):
+  def __init__(self,threshold,retrigger_enable)
