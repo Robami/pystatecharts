@@ -1,0 +1,179 @@
+How to create design files for statechart builder
+rps 2/3/2011
+
+
+[STATECHART]
+name = dtest
+
+The name of the statechart becomes a python file,
+for this example dtest.py
+
+[OPTIONS]
+Debug            = 1
+Print            = 0
+GenCode          = 1
+GenCallbacks     = 1
+Interpret        = 1
+LimitAction      = 0 
+InsertCB        = pieces_cb.py 
+
+
+Debug -       as states transition and events are sent, additional
+              debug statements are provided
+              
+Print -       prints generated code to display as the statechart is being
+built, which is useful for debugging
+
+GenCode -      generates python code in dtest.py
+
+GenCallbacks - generates empty callbacks / overwrites callbacks (be carefull)
+               callbacks are useful for tailoring what  happens inside
+               of a state.
+
+Interpret -    takes the next step after building the statechart by
+               entering the python code into a python executor
+               (saves the step of invoking python and including dtest.py
+               
+LimitAction -    = 0    python code may be placed in entry / action list, 
+                        which more or less allows the user to do anything that
+                        passes the parser which has limitations - see InsertCallbacks
+                 = 1    only events only may be sent
+                        adding python code will be flagged as an error
+                 (LimitAction hasn't been completely thought out or fully debugged)
+                        
+InsertCB - This permits more complex callbacks to be exchanged for the
+                  limited simple callbacks that can be defined in the design file.                        
+                          
+
+[INITIAL]
+file     = init_des.py
+Python_1 = from KThread import *  # killable thread
+
+                - Initialization code placed at the top of generated code
+                  may either be placed into a file or directly into the
+                  design file. Typically would be the import commands for pystatecharts, 
+                  rabbitmq, etc.
+                  
+[STATE_X]         
+name = TopState1   
+parent = None       
+type = ConcurrentState   
+entry = None        
+do = None           
+exit = None
+
+   		-  these elements are standard for declaring states in pystatechart methods
+                    X increments
+                name - the name of the node,
+                parent - the parent of the node
+                type concurrent(topstate for concurrent hierarchical states), hierarchical (leaves below), state (leaf)
+                entry - call <class(Action)>.execute() on entry       
+                do    - call <class(Action)>.execute() after entry
+                exit - call <class(Action).execute() on exit
+                
+                Creating a method that sends an event to be generated is of the form:
+                [entry | do | exit ] = [<method_name>(), <eventName>]
+                Creating a method that sends an event through a rabbitmq exchange is of the form:
+                [entry | do | exit ] =    [<port_name>(), port_name]
+                (The port definition will be described further on)
+                
+[EVENTS_1]
+name = DistribEvents
+event_1 = triggerEvent    
+		- declaration of events
+                name - the python class       
+                event_x - x increments
+
+[SUPPRESS_PRINT]
+event_1 = triggerEvent
+                  - duplicated from the [EVENT_] section these events won't be printed when sent
+                
+[TRANSITION_X]
+start  = start   
+end    = TopState1
+event  = None
+guard  = None
+
+here are several alternatives for actions:
+
+action = [IntoWaitState2(), eventclass.eventname]
+
+action = [Xition_SingleStepStateSR_ReadStartStateSR(),print "transition from SingleStepStateSR to ReadStartStateSR" ]  
+
+		- these elements are standard for declaring transitions in pystatecharts
+                start -"start" for topstates (of which there may only be one (top concurrent state)), 
+                        or name of state transitioning from
+                
+                end - "end" for topstates (of which there may only be one (top concurrent state))
+                     or name of state transitioning to
+                     
+                event - event name that causes the transition
+                
+                guard - a class of type Guard that is called with a .check() method, if returns True, then the event
+                        causes the transition, if False, then not.
+                        There are pre-defined Guards:
+                        1.CountingGuard(threshold,retrigger_f)
+                           counter initially set to zero, counts attempts to enter state 
+                           returning False until threshold, then returns True
+                           threshold = max count before returning true
+                           retrigger_f = True, then reset counter to 0 after triggering
+                                         False, don't reset counter, 
+                        
+                action - a class of type Action where .execute() method is called, which in turn may 
+                         send another event
+                         
+Ports definitions contain the standard parameters for python - rabbitmq methods, which
+have been wrapped to make things easier for embedding                    
+                        
+[PORT_INIT]
+import_name = rmq
+host = 'localhost'
+userid = 'guest'
+password = 'guest'
+			- This is the rabbit initialization call.
+                           the import_name is appended to python library calls
+                           for example rmq.Subscribe()  
+                           
+[PORT_CONFIG_X]
+channel_id = 1
+exchange = myexchange
+type = direct
+queue = myqueue
+msg_tag = myq.myx
+			- This is the configuration definition, _X increments for each configuration,
+                          channel_id is for the user handle, channel internally has its own id 
+                          type: 'fanout' for 1:N , 'direct' for 1:1 
+                          output ports are exchanges, input ports are queues 
+                          message tags allow filtering of messages within the server
+                          exchanges and queues correspond to rabbitmq/amqp exchanges and queues
+                                                  
+[PORT_X]
+name     = event2port1
+type     = output
+port     = myExchange2
+event_id   = JsonData
+			- This is the "port" definition, _X increments for each port
+                          If the name is found in a state or transition, the port is checked
+                          for a match, if found, and the port is configured as an output, the event is 
+                          sent as a message.
+                          If the port is configured as an input, the message received is converted
+                          to an event, and the event is sent
+                          Output ports are exchanges, input ports are queues. 
+                                                    
+
+			 events must match an value of the EVENT section
+			 exchange and queue must have a matching a value in the PORT_CONFIG section
+			 if output, on event to portname, the event is sent over the message queue
+			 if input, there is a thread listener callback named with queue name, 
+			   and the message is converted to an event
+			 event data is optional
+
+			 if type == output
+			   if event_id == 'AnyEvent', send the event as the key, no event data
+			     on the other side, on key match, key is converted to ID and sent
+			   if event_id == 'JsonData', send the event appended with json of event data
+			
+			 if type == input
+			   if event_id == 'AnyEvent', 
+			       convert the message to an Event                                       
+                
