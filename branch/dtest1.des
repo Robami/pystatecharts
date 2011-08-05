@@ -1,0 +1,246 @@
+
+;---------------------------------------------------------------------
+;
+; Statechart definition for dtest - distributed test
+; based on SVM by Thomas Feng, and pystatecharts by vishpat
+;
+; open issues:
+;    transition guards untested
+;    action should be a list, should support events directly, should
+;      support limits on features
+;    events should support parameters
+;    transitions should support time as an event (a timed monitor state?)
+;    states should be stateful (i.e. count)
+;    concurrent states should execute concurrently
+;
+; startState, endState are reserved keywords for top-most entry/exit states
+; State, HierarchicalState, and Concurrent state are reserved keywords for state types
+; 
+;---------------------------------------------------------------------
+[STATECHART]
+name = dtest1		  
+
+;
+; "Debug"        prints debug statement on transition if Action method exists
+; "Print"        prints generated code to display
+; "GenCode"      generates python code
+; "GenCallbacks" generates empty callbacks / overwrites callbacks (be carefull)
+; "Intepret"     throws generated code into python executor
+; "Limit = 0"    python code may be placed in entry / action list
+; "Limit = 1"    events only may be placed in entry / action list
+; 
+; lists are in the format [<methodname> , <item1>, <item2>, ...]
+
+[OPTIONS]
+Debug        = True
+Print        = False
+GenCode      = 1
+GenCallbacks = 1
+Interpret    = 1
+LimitAction  = 0  
+
+[INITIAL]
+file = 
+Python_1 = from threading import Lock 
+Python_2 = from pystatecharts.pseudostates import StartState
+Python_3 = from pystatecharts.pseudostates import EndState
+Python_4 = from pystatecharts.pseudostates import HistoryState
+Python_5 = from pystatecharts.states import Statechart
+Python_6 = from pystatecharts.states import State
+Python_7 = from pystatecharts.states import ConcurrentState
+Python_8 = from pystatecharts.states import HierarchicalState  
+Python_9 = from pystatecharts.states import Transition 
+Python_10 = from pystatecharts.action import Action
+Python_11 = from pystatecharts.transition import Event 
+Python_12 = from pystatecharts.transition import Guard
+Python_13 = from pystatecharts.runtime import RuntimeData
+Python_14 = import sys
+;
+; your path to rabbitmq may be different
+;
+Python_15 = sys.path.append('/home/jupiter/rps/rabbitmq/amqplib-0.6.1')
+Python_16 = sys.path.append('/home/jupiter/rps/rabbitmq/apps')
+Python_17 = import pyrabbitmq as rmq
+Python_18 = from scbUtilities import *
+Python_19 = from scbObjects import *
+Python_20 = from StatechartThread import *
+     
+
+; top states are concurrent-states
+; states with leaves are hierarchical-states
+; all concurrent states and hierarchical states need a "start"
+; states without leaves are plain states
+
+;  the form:
+;
+;  entry = [ method() event ]
+;
+; will generate a python method and place the send event inside the method 
+;
+
+[STATE_1]         
+name = TopState1   
+parent = None       
+type = ConcurrentState   
+entry = None        
+do = None           
+exit = None
+        
+          
+[STATE_2] 
+name = SenderState  
+parent = TopState1 
+type = HierarchicalState    
+entry = None    
+do = None
+exit = None
+
+
+ 
+[STATE_3]
+name = WaitState1
+parent = SenderState
+type = State     
+entry = None 
+do = None                    
+exit = None 
+
+
+[STATE_4]
+name = MsgState
+parent = SenderState
+type = State   
+;
+; on entering state sends message event as message
+entry = [event2port1(), DistribEvents.msgEvent]  
+;
+; generate and error for testing error detection:
+;
+;entry = [event2port1(), DistribEvents.ackEvent]    
+do = None
+exit =  None 
+             
+
+
+[EVENTS_1]
+base = 1
+name = DistribEvents
+event_1 = triggerEvent
+event_2 = msgEvent
+event_3 = ackEvent
+event_4 = mDoneEvent
+event_5 = rDoneEvent
+event_6 = exitEvent1
+event_7 = exitEvent2
+
+;
+; a transition into any hierarchical state (i.e. state with starts)
+; will automatically re-start lower states
+;
+
+[TRANSITION_1]
+start  = start   
+end    = TopState1
+event  = None
+guard  = None
+action = StartAction1()
+
+[TRANSITION_2]
+start  = TopState1
+end    = end    
+event  = DistribEvents.exitEvent1
+guard  = None
+action = ExitAction1()
+
+
+[TRANSITION_3]
+start  = start   
+end    = SenderState
+event  = None
+guard  = None
+action = startProtocolState1()
+
+
+[TRANSITION_4]
+start  = start
+end    = WaitState1    
+event  = None
+guard  = None
+action = startWaitState1()
+
+
+[TRANSITION_5]
+start  = WaitState1
+end    = MsgState    
+event  = DistribEvents.triggerEvent
+guard  = None
+action = IntoMsgState()
+
+
+[TRANSITION_6]
+start  = MsgState
+end    = WaitState1
+event  = DistribEvents.ackEvent
+guard  = None
+action = [IntoWaitState1(), DistribEvents.mDoneEvent]
+
+
+;
+; import_name is python, if empty then assumed not used
+; channel_id is for the user handle, channel internally has its own id 
+; choices for type: 'fanout' for 1:N , 'direct' for 1:1 
+; output ports are exchanges, input ports are queues 
+; message tags allow filtering of messages within the server
+; exchanges and queues correspond to rabbitmq/amqp exchanges and queues
+;
+[PORT_INIT]
+import_name = rmq
+host = localhost
+userid = guest
+password = guest
+
+; type = direct, fanout
+
+[PORT_CONFIG_1]
+channel_id = 1
+exchange = myExchange1
+type = direct
+queue = myQueue1
+msg_tag = myq.myx
+
+[PORT_CONFIG_2]
+channel_id = 1
+exchange = myExchange2
+type = direct
+queue = myQueue2
+msg_tag = myq.myx
+;
+; events must match an value of the EVENT section
+; exchange and queue must have a matching a value in the PORT_CONFIG section
+; if output, on event to portname, the event is sent over the message queue
+; if input, there is a thread listener callback named with queue name, 
+;   and the message is converted to an event
+; event data is optional
+
+; if type == output
+;   if event_id == 'AnyEvent', send the event as the key, no event data
+;     on the other side, on key match, key is converted to ID and sent
+;   if event_id == 'JsonData', send the event appended with json of event data
+;
+; if type == input
+;   if event_id == 'AnyEvent', 
+;       convert the message to an Event
+[PORT_1]
+name     = event2port1
+type     = output
+port     = myExchange2
+event_id   = JsonData
+
+
+[PORT_2]
+name = port2event2
+type = input
+port = myQueue1
+event_id   = DistribEvents.ackEvent
+
+
