@@ -37,6 +37,7 @@ class State(object):
         self.do    = do 
         self.exit  = exit 
         self.transitions = []
+	self.event = None
 
     def add_transition(self, transition):
         if transition == None:
@@ -74,7 +75,7 @@ class State(object):
 
     def dispatch(self, runtime, event, param):
         status = False
-
+        #print "transition count=%d" % len(self.transitions)
         for transition in self.transitions:	
             if transition.execute(runtime, event, param):
                 status = True
@@ -162,6 +163,7 @@ class Transition(object):
             return False
 
         if (self.guard and (not self.guard.check(runtime, param))):
+	    #print "guard returns False"
             return False
 
         runtime.event = event
@@ -170,7 +172,8 @@ class Transition(object):
         for state in self.deactivate:
             state.deactivate(runtime, param)
 
-        if self.action:
+        if self.action: 
+	    param.event = event
             self.action.execute(param)	
 
         for state in self.activate:
@@ -212,10 +215,14 @@ class HierarchicalState(Context):
         Context.deactivate(self, runtime, param)
 
     def dispatch(self, runtime, event, param):
+        try:           
+            active_obj = runtime.active_states[self]
+        except Exception as eobj:
+            print "\n\n*** states.py: unable to recover from event: %d ***" % (event.id)
+            raise
         
-        if not runtime.active_states[self]:
-            assert False, (("HierarchicalState: " +
-                        "trying to dispatch on inactive state"))
+        #assert False, (("HierarchicalState: " +
+        #                  "trying to dispatch on inactive state"))
 
         """ See if the current child state can handle the event """
         rdata = runtime.active_states[self]
@@ -255,7 +262,11 @@ class ConcurrentState(Context):
             for region in self.regions:
                 if not (region in rdata.state_set):
                     region.activate(runtime, param)
-                    region.start_state.activate(runtime, param)
+                    try:
+                      region.start_state.activate(runtime, param)
+                    except Exception as eobj:
+                      print "\n*** states.py: state X is missing a start transition. ***" 
+                      raise
                     
         return status            
 
@@ -311,4 +322,5 @@ class Statechart(Context):
     
     def shutdown(self):
         pass
-
+	
+   
