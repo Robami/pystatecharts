@@ -16,23 +16,25 @@
      getFuncFromFile			- returns the function from a file
      findMissing                        - returns functions present but not replaced
  
- class MyException(Exception)           - returns string from exception
+ class ExceptionString(Exception)       - returns string from exception
 			 
 """
 
-import re                   # regular expressions
+import re                # regular expressions
+import KThread           # killable thread
+import time
 #
 #------------------------------------------------------------------------------
-# MyException
+# ExceptionString
 #          purpose: to get access to the string message inside the
 #                   exception object
 #
-class MyException(Exception):
+class ExceptionString(Exception):
 
     def __str__(self):
         return repr(self.args[0])
     # end __str__
-#end class MyException        
+#end class ExceptionString        
 #------------------------------------------------------------------------------
 # isInlist
 #         purpose: to determine if an item is in a list without
@@ -89,8 +91,7 @@ class funcFromFile:
         line = fp.readline()
         if (len(line) == 0):
           done_f = True
-          break
-        
+          break      
         #
         # match has to be exact
         #  	
@@ -125,32 +126,18 @@ class funcFromFile:
            #
            # still here? then
            # copy lines to buffer 
-           # to line where there is a non-comment in first column
-           # and previous line last column (before \n) is not backslash
-           # then break
+           # until end of file or "class" 
+           #
            
-           buf = buf + line
-           prev_line = line         
-           while (not done_f):
-             line = fp.readline()
-             if (len(line) == 0):
+           buf = buf + line          # output
+           while (not done_f):       # while not done
+             line = fp.readline()    # read next line
+             if (not line) or (line[0:len('class')]=='class'):  
                 match_f = True
                 done_f = True
                 break
              
-             if (line[0] == ' ') or (line[0] == '#'): # simple line
-               buf = buf + line
-               prev_line = line
-             else:                                    # more complex
-                if (prev_line[len(prev_line)-2] != '\\'):  # not continuation
-                  done_f = True
-                  match_f = True
-                  break
-                else:               # line continuation
-                  buf = buf + line  # keep going
-                  prev_line = line
-               
-             #end if simple line
+             buf = buf + line  # keep going          
            
            # while lines in function
            
@@ -165,9 +152,9 @@ class funcFromFile:
     if (match_f):
       self.funcList = self.funcList + [method_name]
       
-    return match_f, buf
+    return match_f, buf, method_name
     
-  #end getFuncText
+  #end getFuncFromFile
   #-----------------------------------------------------------------
   #
   # Purpose: to provide a list of un-matched functions
@@ -225,7 +212,62 @@ class funcFromFile:
     return err_f, missingList
   
   #end findMissing
-#end funcFromFile
+#end class funcFromFile
 #-----------------------------------------------------------------
+#
+class peThread(KThread.KThread):
+
+  def __init__(self,interface,event_id,interval,maxcnt=None): 
+      KThread.KThread.__init__(self)   # the thread  
+      self.interface = interface       # the statechart
+      self.running   = False           # thread loop control
+      self.event_id  = event_id        # the item of iterest
+      self.interval  = interval        # period between sending events
+      self.maxcnt    = maxcnt          # max number of events
+      self.counter   = 0               # counter to max
+      self.pause     = False           # allows pause without shutdown
+  # end __init__
+  #-----------------------------------------------------------------
+  def run(self):                      # call .start() NOT .run()           
+      interface = self.interface
+      self.running = True         
+      while self.running: 
+        #
+        # might want to break up sleep into smaller 
+        # chunks to accomodate faster reaction to 
+        # suspend and resume
+        #
+        if (self.interval > 0):
+          time.sleep(self.interval)
+
+        if (self.pause):
+           continue
+          
+        interface.sendEvent(self.event_id)
+              
+        if not (self.interval > 0):
+           self.pause=True 
+        else:
+           if (self.maxcnt != None):
+             self.counter = self.counter + 1
+             if (self.counter >= self.maxcnt):
+               self.pause=True  
+  #end run
+  #-----------------------------------------------------------------
+  def suspend(self):
+     self.pause = True
+  # end suspend
+  #-----------------------------------------------------------------
+  def resume(self):
+     self.pause = False
+  # end resume
+  #-----------------------------------------------------------------
+  def shutdown(self):   
+      print "periodic event thread shutting down"    
+      self.running = False 
+      self.kill()            # unexplained program exit, use pause
+  #end shutdown
+      
+#end class peThread 
 #-----------------------------------------------------------------
 
